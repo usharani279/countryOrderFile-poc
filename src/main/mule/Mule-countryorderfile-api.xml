@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd">
+	<flow name="Mule-countryorderfile-api-main" doc:id="ec1f5f2f-3849-4213-9786-2f13761c2c31">
+        <http:listener config-ref="Mule-countryorderfile-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.httpStatus default 500]]]></http:headers>
+            </http:error-response>
+        </http:listener>
+        <set-variable value="#[uuid()]" doc:name="correlationID" doc:id="050e0f11-afeb-4b1f-8923-15d7e212f192" variableName="correlationID"/>
+		<apikit:router config-ref="Mule-countryorderfile-api-config"/>
+        <error-handler ref="error-handlingError_Handler">
+           
+        </error-handler>
+    </flow>
+    <flow name="get:\countryorder:Mule-countryorderfile-api-config" doc:id="a9b21af9-44a7-4773-a431-8cb857aa5a4f">
+		<logger level="INFO" doc:name="flow started" doc:id="d971f6b3-f174-47c4-86f0-1e5b6dc679cb" message='#["flow started  with refference transactionid" ++ vars.correlationID]'/>
+		<flow-ref doc:name="Flow Reference" doc:id="5779c07a-2fda-4965-af70-cc02a7d21a38" name="mule-countryorderfile-api-implFlow"/>
+		<logger level="INFO" doc:name="flow ended" doc:id="7de0e78e-f39a-420b-8b0e-9c1ee3de40bf" message='#["flow ended  with refference transactionid" ++ vars.correlationID]'/>
+		<error-handler ref="error-handlingError_Handler" />
+    </flow>
+</mule>

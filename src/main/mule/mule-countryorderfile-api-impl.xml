@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<flow name="mule-countryorderfile-api-implFlow" doc:id="6a05752d-5436-442c-9a7b-b90073edddb0" >
+		<ee:transform doc:name="Creating Variable" doc:id="b68b2772-833a-4e4b-ac7f-f86d127a9520" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="Region" ><![CDATA[%dw 2.0
+output application/json
+---
+attributes.queryParams.region]]></ee:set-variable>
+				<ee:set-variable variableName="filepath" ><![CDATA[%dw 2.0
+output application/json
+---
+payload.filepath]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<file:read doc:name="Read CSV file" doc:id="c8e830d9-b0f4-45bc-aa9e-f367de0af796" config-ref="File_Config" path="#[vars.filepath]"/>
+		<choice doc:name="Choice" doc:id="4063ca02-5035-4ff3-ae22-8e69b291f8e0" >
+			<when expression="#[payload.Region contains vars.Region]">
+				<ee:transform doc:name="Filtering region and Mapping" doc:id="3d4f28c8-33d1-44dc-a3cb-559b6221024d" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[((vars.Region): payload filter ($.Region == vars.Region) map {
+  "Country"  : $."Country",
+  "Order ID" : $."Order ID",
+   "Ship Date" : (if(sizeOf($."Ship Date")==9)(
+
+("0" ++ $."Ship Date" replace "/" with "-")as Date{format:"MM-dd-yyyy"} as String {format: "dd-MMM-yyyy"})
+
+else(
+
+($."Ship Date" replace "/" with "-") as Date{format:"MM-dd-yyyy"} as String {format: "dd-MMM-yyyy"}
+
+)),
+"Total Cost": round($."Total Cost")
+})]]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Error Message" doc:id="935ee25a-b65d-4ba4-ab89-ec0d899b7436" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+"message": "error"]]></ee:set-payload>
+					</ee:message>
+					<ee:variables >
+						<ee:set-variable variableName="httpStatus" ><![CDATA[400]]></ee:set-variable>
+					</ee:variables>
+				</ee:transform>
+			</otherwise>
+		</choice>
+		<logger level="INFO" doc:name="Final payload" doc:id="4e9c77a2-cc16-42c0-8da0-6c02a0ef9767" message="#[payload]"/>
+		<error-handler ref="error-handlingError_Handler" />
+	</flow>
+</mule>
